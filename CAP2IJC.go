@@ -1,13 +1,15 @@
 package main
+
 import (
-	"fmt"
-	"os"
 	"archive/zip"
+	"bufio"
+	"fmt"
 	"io"
 	"log"
-	"bufio"
+	"os"
 	"strings"
 )
+
 func readCAP(sCapFileName string, option int) {
 
 	var baHeader []byte
@@ -24,54 +26,54 @@ func readCAP(sCapFileName string, option int) {
 	var baDebug []byte
 
 	r, err := zip.OpenReader(sCapFileName)
-	if err !=nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 	defer r.Close()
-	for _,f :=range r.File {
+	for _, f := range r.File {
 		if f.FileInfo().IsDir() {
 			//nothing to be done
 		} else {
 			sFileName := f.Name
 			sDirs := strings.Split(sFileName, "/")
-			switch sDirs[len(sDirs) - 1]{
-			case "Header.cap" :
+			switch sDirs[len(sDirs)-1] {
+			case "Header.cap":
 				fmt.Println("Processing Header.cap")
 				baHeader = setComponent(f)
-			case "Directory.cap" :
+			case "Directory.cap":
 				fmt.Println("Processing Directory.cap")
 				baDirectory = setComponent(f)
-			case "Applet.cap" :
+			case "Applet.cap":
 				fmt.Println("Processing Applet.cap")
 				baApplet = setComponent(f)
-			case "Import.cap" :
+			case "Import.cap":
 				fmt.Println("Processing Import.cap")
 				baImport = setComponent(f)
-			case "ConstantPool.cap" :
+			case "ConstantPool.cap":
 				fmt.Println("Processing ConstantPool.cap")
 				baConstantPool = setComponent(f)
-			case "Class.cap" :
+			case "Class.cap":
 				fmt.Println("Processing Class.cap")
 				baClass = setComponent(f)
-			case "Method.cap" :
+			case "Method.cap":
 				fmt.Println("Processing Method.cap")
 				baMethod = setComponent(f)
-			case "StaticField.cap" :
+			case "StaticField.cap":
 				fmt.Println("Processing StaticField.cap")
 				baStaticField = setComponent(f)
-			case "RefLocation.cap" :
+			case "RefLocation.cap":
 				fmt.Println("Processing RefLocation.cap")
 				baRefLocation = setComponent(f)
-			case "Export.cap" :
+			case "Export.cap":
 				fmt.Println("Processing Export.cap")
 				baExport = setComponent(f)
-			case "Descriptor.cap" :
+			case "Descriptor.cap":
 				fmt.Println("Processing Descriptor.cap")
 				baDescriptor = setComponent(f)
-			case "Debug.cap" :
+			case "Debug.cap":
 				fmt.Println("Processing Debug.cap")
 				baDebug = setComponent(f)
-			default :
+			default:
 				//nothing
 
 			}
@@ -79,17 +81,17 @@ func readCAP(sCapFileName string, option int) {
 	}
 	//recuparate the name of the cap file
 	sDirsOut := strings.Split(sCapFileName, "/")
-	sCapFile := sDirsOut[len(sDirsOut) - 1]
+	sCapFile := sDirsOut[len(sDirsOut)-1]
 	n := len(sCapFile) - 4
 	sIJCFileName := sCapFile[:n]
 	sIJCFileName = sIJCFileName + ".ijc"
 
 	fout, err := os.Create(sIJCFileName)
-	if err !=  nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 	defer fout.Close()
-	w:= bufio.NewWriter(fout)
+	w := bufio.NewWriter(fout)
 	defer w.Flush()
 
 	/*option is related to the installation order
@@ -128,7 +130,7 @@ func readCAP(sCapFileName string, option int) {
 }
 
 //write in the .ijc file
-func outComponent(wout *bufio.Writer, baComp []byte){
+func outComponent(wout *bufio.Writer, baComp []byte) {
 	if baComp != nil {
 		_, err := wout.Write(baComp)
 		if err != nil {
@@ -141,12 +143,12 @@ func outComponent(wout *bufio.Writer, baComp []byte){
 func setComponent(file *zip.File) []byte {
 	var baComp = make([]byte, file.FileHeader.FileInfo().Size())
 	r, err := file.Open()
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 	b, err := io.ReadFull(r, baComp)
 
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 		fmt.Println(b)
 	}

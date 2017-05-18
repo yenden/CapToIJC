@@ -1,18 +1,18 @@
 package main
+
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"bufio"
-	"sort"
 	"strings"
 )
 
 /*remove duplicates from a string slice*/
 func removeDuplicates(elements []string) []string {
-	encountered := map[string]bool{}	//mapping each string with
-						//a bool in target duplicates
+	encountered := map[string]bool{} //mapping each string with
+	//a bool in target duplicates
 	finalResult := []string{}
-	for v:= range elements {
+	for v := range elements {
 		if encountered[elements[v]] == true {
 			//nothing to be done
 		} else {
@@ -26,21 +26,21 @@ func removeDuplicates(elements []string) []string {
 /* read lines from a slice of files, and put all the files lines in "lines"*/
 func readLines(files []string) (lines []string, err error) {
 	var line string
-	for _,file := range files {
-		f, err:= os.Open(file)
-		if err!= nil {
+	for _, file := range files {
+		f, err := os.Open(file)
+		if err != nil {
 			fmt.Println(err)
 			return nil, err
 		}
 		defer f.Close()
-		r:= bufio.NewScanner(f)
+		r := bufio.NewScanner(f)
 		for r.Scan() {
-			line= r.Text()
+			line = r.Text()
 			for _, fl := range line {
 				//if a line strat with a number
 				//between 0 and 9
-				if fl<=57 && fl>=48 {
-					result:= strings.Split(line, " ")
+				if fl <= 57 && fl >= 48 {
+					result := strings.Split(line, " ")
 					result[1] += string("\r\n")
 					lines = append(lines, result[1])
 				}
@@ -53,14 +53,14 @@ func readLines(files []string) (lines []string, err error) {
 }
 
 /* write lines in a file */
-func writeLines(file string, lines[]string) (err error ){
+func writeLines(file string, lines []string) (err error) {
 	f, err := os.Create(file)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 	defer f.Close()
-	w:= bufio.NewWriter(f)
+	w := bufio.NewWriter(f)
 	defer w.Flush()
 	for _, line := range lines {
 		_, err := w.WriteString(line)
@@ -72,20 +72,16 @@ func writeLines(file string, lines[]string) (err error ){
 	return nil
 }
 
+/*
 //main function
 func main() {
 	tabFiles := []string{
-		`EMVConstants.txt`,
-		`EMVCrypto.txt`,
-		`EMVProtocolState.txt`,
-		`EMVStaticData.txt`,
-		`SimpleEMVApplet.txt`,
-		`Passeport.txt`,
+				`bytecode.txt`,
 
 	}
 	/*tabFiles := []string{
 		`Passeport.txt`,
-	}*/
+	}//
 	lines, err := readLines(tabFiles)
 	if err != nil {
 		fmt.Println(err)
@@ -98,6 +94,4 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-}
-
-
+}*/

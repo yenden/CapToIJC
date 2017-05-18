@@ -3,3 +3,4 @@ pipeline:
     image: golang:1.8
     commands:
       - go run CAP2IJC.go
+      

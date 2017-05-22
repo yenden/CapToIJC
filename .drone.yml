@@ -1,12 +1,5 @@
-workspace:
-  base: /go
-  path: src/JCVM
-
-
 pipeline:
   build:
     image: golang:1.8
     commands:
-      - go run CAP2IJC.go
-     
-services:
+      - go build CAP2IJC.go

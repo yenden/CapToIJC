@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -10,20 +11,82 @@ import (
 	"strings"
 )
 
+const (
+	tagHeaderComp            = 0x01
+	tagDirComp               = 0x02
+	tagAppletComp            = 0x03
+	tagImportComp            = 0x04
+	tagConstantPoolComp      = 0x05
+	tagClassComp             = 0x06
+	tagMethodComp            = 0x07
+	tagStaticFieldComp       = 0x08
+	tagReferenceLocationComp = 0x09
+	tagExportComp            = 0x0A
+	tagDescriptorComp        = 0x0B
+	tagDebugComp             = 0x0C
+)
+
+//capture the console output
+func captureStdout(baComp []byte, comp int) string {
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	writeToFile(baComp, comp)
+
+	w.Close()
+	os.Stdout = old
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	return buf.String()
+}
+func writeToFile(baComp []byte, comp int) {
+	switch comp {
+	case tagHeaderComp:
+		fmt.Println("**************Header component*************")
+	case tagDirComp:
+		fmt.Println("**************Directory component*************")
+	case tagImportComp:
+		fmt.Println("**************Import component*************")
+	case tagAppletComp:
+		fmt.Println("**************Applet component*************")
+	case tagClassComp:
+		fmt.Println("**************Class component*************")
+	case tagMethodComp:
+		fmt.Println("**************Method component*************")
+	case tagStaticFieldComp:
+		fmt.Println("**************Static Field component*************")
+	case tagExportComp:
+		fmt.Println("**************Export component*************")
+	case tagConstantPoolComp:
+		fmt.Println("**************Constant Pool component*************")
+	case tagReferenceLocationComp:
+		fmt.Println("**************Reference Location component*************")
+	case tagDescriptorComp:
+		fmt.Println("**************Descriptor component*************")
+	case tagDebugComp:
+		fmt.Println("**************Debug component*************")
+	}
+	fmt.Println(baComp)
+	fmt.Println()
+}
 func readCAP(sCapFileName string, option int) {
 
-	var baHeader []byte
-	var baDirectory []byte
-	var baApplet []byte
-	var baImport []byte
-	var baConstantPool []byte
-	var baClass []byte
-	var baMethod []byte
-	var baStaticField []byte
-	var baRefLocation []byte
-	var baExport []byte
-	var baDescriptor []byte
-	var baDebug []byte
+	var (
+		baHeader       []byte
+		baDirectory    []byte
+		baApplet       []byte
+		baImport       []byte
+		baConstantPool []byte
+		baClass        []byte
+		baMethod       []byte
+		baStaticField  []byte
+		baRefLocation  []byte
+		baExport       []byte
+		baDescriptor   []byte
+		baDebug        []byte
+	)
 
 	r, err := zip.OpenReader(sCapFileName)
 	if err != nil {
@@ -31,9 +94,7 @@ func readCAP(sCapFileName string, option int) {
 	}
 	defer r.Close()
 	for _, f := range r.File {
-		if f.FileInfo().IsDir() {
-			//nothing to be done
-		} else {
+		if !f.FileInfo().IsDir() {
 			sFileName := f.Name
 			sDirs := strings.Split(sFileName, "/")
 			switch sDirs[len(sDirs)-1] {
@@ -96,43 +157,33 @@ func readCAP(sCapFileName string, option int) {
 
 	/*option is related to the installation order
 	 * describe in JCVM specification
-	 * option =O => descriptor component will be not included.
+	 * option =O => debug component will be not included.
 	 * option =1 => all components will be included
 	 */
 
-	if option == 0 {
-		outComponent(w, baHeader)
-		outComponent(w, baDirectory)
-		outComponent(w, baImport)
-		outComponent(w, baApplet)
-		outComponent(w, baClass)
-		outComponent(w, baMethod)
-		outComponent(w, baStaticField)
-		outComponent(w, baExport)
-		outComponent(w, baConstantPool)
-		outComponent(w, baRefLocation)
+	outComponent(w, baHeader, tagHeaderComp)
+	outComponent(w, baDirectory, tagDirComp)
+	outComponent(w, baImport, tagImportComp)
+	outComponent(w, baApplet, tagAppletComp)
+	outComponent(w, baClass, tagClassComp)
+	outComponent(w, baMethod, tagMethodComp)
+	outComponent(w, baStaticField, tagStaticFieldComp)
+	outComponent(w, baExport, tagExportComp)
+	outComponent(w, baConstantPool, tagConstantPoolComp)
+	outComponent(w, baRefLocation, tagReferenceLocationComp)
+	outComponent(w, baDescriptor, tagDescriptorComp)
 
-	} else if option == 1 {
-		outComponent(w, baHeader)
-		outComponent(w, baDirectory)
-		outComponent(w, baImport)
-		outComponent(w, baApplet)
-		outComponent(w, baClass)
-		outComponent(w, baMethod)
-		outComponent(w, baStaticField)
-		outComponent(w, baExport)
-		outComponent(w, baConstantPool)
-		outComponent(w, baRefLocation)
-		outComponent(w, baDescriptor)
-		outComponent(w, baDebug)
+	//if option ==1 debug compwill be included
+	if option == 1 {
+		outComponent(w, baDebug, tagDebugComp)
 	}
-
 }
 
 //write in the .ijc file
-func outComponent(wout *bufio.Writer, baComp []byte) {
+func outComponent(wout *bufio.Writer, baComp []byte, comp int) {
 	if baComp != nil {
-		_, err := wout.Write(baComp)
+		toWrite := captureStdout(baComp, comp)
+		_, err := wout.Write([]byte(toWrite))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -158,10 +209,11 @@ func setComponent(file *zip.File) []byte {
 
 func main() {
 	fmt.Println("----CAP2IJC version 1.0 ----")
+
 	args := os.Args[1:]
 	if args == nil || len(args) == 0 {
 		fmt.Println("Usage: \n\tCap2IJC filename.cap or\n\tCap2IJC -a filename.cap")
-		fmt.Println("Options: \n\t -a to include descriptor and debug components")
+		fmt.Println("Options: \n\t -a to include debug components")
 	} else if len(args) == 1 {
 		readCAP(args[0], 0)
 	} else {
